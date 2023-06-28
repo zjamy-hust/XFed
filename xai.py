@@ -93,35 +93,12 @@ def XAI_evaluate_with_global_masks(local_model,
                                    output_path="./",
                                    verbose=1,
                                    is_mode_6=False):
-    """     重写XAI_evaluate，使其能够根据global model产生mask，从而实现global model和local model产生的mask进行对比
-    
-    与原始XAI_evaluate之间的差别：
-        1、采用DataSplit加载测试样本
-
-    Args:
-        local_model (_type_): client model
-        test_files_list (_type_): 人工挑选的测试样本列表，list。
-        path (_type_): 测试样本的目录
-        device (_type_): 
-        XAI_labels (_type_): 测试样本的label index。
-        classes (_type_): 测试样本的label名称。
-        nt_samples
-        n_steps
-        margin： in_mask应当比out_mask大margin，防止噪声导致acc波动。
-        topk
-        compare_sever_client_masks (_type_): 是否进行client和global之间的对比
-        global_model (_type_, optional): Server model. Defaults to None.
-        batch_size: 测试和生成mask时的batch_size，为了计算的准确度，batch_size尽可能小，并且nt_samples和n_steps尽可能大。
-
-    Returns:
-        _type_: _description_
-    """
     
     test_files_list_jpg = sorted(filter(lambda x: x.endswith(".jpg"), test_files_list))
     if len(test_files_list_jpg) <= 0:
-        raise ValueError("test_files_list不包含jpg文件。")
+        raise ValueError("test_files_list does not contain jpg files.")
     if len(test_files_list_jpg) != len(XAI_labels):
-        raise ValueError("长度不匹配。")
+        raise ValueError("The lengths do not match.")
     
     if os.path.exists(output_path) == False:
         os.makedirs(output_path)
@@ -156,10 +133,10 @@ def XAI_evaluate_with_global_masks(local_model,
         input_asset=torch.tensor(original_image_asset.unsqueeze(0).cpu().detach().numpy())
         input_asset.requires_grad = True
         
-        input_asset_norm=fn.normalize(input_asset, mean=normalize_mean, std=normalize_std) #归一化，用来参与计算
+        input_asset_norm=fn.normalize(input_asset, mean=normalize_mean, std=normalize_std)
         test_images.append((input_asset_norm.squeeze(dim=0),XAI_labels[im_idx]))
         
-        npimg = original_image_asset.numpy()     # unnormalize，用来直接输出原图
+        npimg = original_image_asset.numpy()     
         npimg_list.append(npimg)
         
         mask_im_name = im_name[:-4]+'_mask.png'
@@ -169,7 +146,7 @@ def XAI_evaluate_with_global_masks(local_model,
         truth_mask = cv2.imread(str(Path(path)/mask_im_name),cv2.IMREAD_GRAYSCALE)
         truth_mask_np=truth_mask_tensor.numpy()   
         
-        image_masks_by_human.append((im_name, truth_mask_np, truth_mask))       #貌似truth_mask_np用不上？？？？？？？？？
+        image_masks_by_human.append((im_name, truth_mask_np, truth_mask)) 
         
     test_images_dataloader = DataLoader(DatasetSplit(test_images, [i for i in range(len(test_files_list_jpg))]), 
                                         batch_size=batch_size, 
@@ -211,7 +188,7 @@ def XAI_evaluate_with_global_masks(local_model,
         _, predicted_asset = torch.max(output_asset, 1)
         
 
-        for i in range(examples_num):   #分别处理每一个样本
+        for i in range(examples_num):   
             if verbose == 1:
                 print("predicted_asset",classes[predicted_asset[i]],"Truth", classes[labels[i]])
             example_index_in_all = batch_idx * test_images_dataloader.batch_size + i
@@ -347,9 +324,9 @@ if __name__=="__main__":
                                         device=device,
                                         XAI_labels=XAI_labels,
                                         classes=classes,
-                                        nt_samples=5,   #测试数值
-                                        n_steps=5,      #测试数值
-                                        margin=0.1,     #in_mask和out_mask之间的差距
+                                        nt_samples=5,   
+                                        n_steps=5,      
+                                        margin=0.1,     
                                         topk=0.1,
                                         compare_sever_client_masks=0,
                                         batch_size=32,

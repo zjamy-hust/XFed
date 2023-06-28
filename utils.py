@@ -34,7 +34,7 @@ def get_dataset(args):
             [transforms.ToTensor(),
              transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))])
     
-    mnist_train_transform = transforms.Compose(             #是否需要进行数据增强？？？？？？？？？？？？？
+    mnist_train_transform = transforms.Compose(            
             [transforms.RandomHorizontalFlip(),
              transforms.RandomGrayscale(),
              transforms.ToTensor(),
@@ -91,9 +91,9 @@ def average_weights(w,selected_list,selected_client_dataset_sizes=None):
     """
     Returns the average of the weights.
     
-    client_dataset_sizes: list。被选中客户端数据集的样本数量，用于设置模型聚合权重。
+    client_dataset_sizes: list。
     """
-    if selected_client_dataset_sizes is None: #没有指定样本数量，则平均每个客户端的参数
+    if selected_client_dataset_sizes is None: 
         w_avg = copy.deepcopy(w[selected_list[0]])
         for key in w_avg.keys():
             # for i in range(1, len(w)):
@@ -102,9 +102,9 @@ def average_weights(w,selected_list,selected_client_dataset_sizes=None):
             w_avg[key] = torch.div(w_avg[key], len(selected_list))
     else:
         if not isinstance(selected_client_dataset_sizes,list):
-            raise ValueError("selected_client_dataset_sizes必须为list。")
+            raise ValueError("selected_client_dataset_sizes must be a list.")
         if not len(selected_client_dataset_sizes) == len(selected_list):
-            raise ValueError("selected_client_dataset_sizes的长度需要与selected_list一致。")
+            raise ValueError("The length of selected_client_dataset_sizes needs to be consistent with selected_list")
         selected_client_weights = np.array(selected_client_dataset_sizes)/sum(selected_client_dataset_sizes)
         w_avg = copy.deepcopy(w[selected_list[0]])
         for key in w_avg.keys():
@@ -124,9 +124,9 @@ def average_weights_for_model_with_global_mask(w,selected_list,selected_client_d
     """
     Returns the average of the weights.
     
-    client_dataset_sizes: list。被选中客户端数据集的样本数量，用于设置模型聚合权重。
+    client_dataset_sizes: list。
     """
-    if selected_client_dataset_sizes is None: #没有指定样本数量，则平均每个客户端的参数
+    if selected_client_dataset_sizes is None: 
         w_avg = copy.deepcopy(w[selected_list[0]])
         for key in w_avg.keys():
             if "backbone_1" in key:
