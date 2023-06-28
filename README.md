@@ -7,6 +7,9 @@ XAI-accuracy is calculated by Intersection over Union Ratio between the heat map
 The results of our experiments show that our method has comparable accuracy to state-of-the-art methods specially designed for accuracy while increasing explainability by 14\%-35\% in terms of rationality.
 
 run_mode_2.sh shows the reference for running this code.
+
 fedxai.py is the main entrance.
-xai.py mainly focus on xai operations.
-assets include the truth masks
+
+xai.py mainly focuses on xai operations.
+
+assets includes the truth masks.
