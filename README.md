@@ -5,3 +5,8 @@ In this paper, we propose eXplainable-Fed (XFed) which is a novel client selecti
 Specifically, XFed selects participants in each round based on a small test set's accuracy via cross-entropy loss and interpretability via XAI-accuracy. 
 XAI-accuracy is calculated by Intersection over Union Ratio between the heat map and the truth mask to evaluate the overall rationale of accuracy. 
 The results of our experiments show that our method has comparable accuracy to state-of-the-art methods specially designed for accuracy while increasing explainability by 14\%-35\% in terms of rationality.
+
+run_mode_2.sh shows the reference for running this code.
+fedxai.py is the main entrance.
+xai.py mainly focus on xai operations.
+assets include the truth masks

@@ -133,7 +133,7 @@ class ResNet18_with_mask_head(nn.Module):
             self._make_layer(block, 512, num_blocks[3], stride=2),
         )
         self.backbone_2 = copy.deepcopy(self.backbone_1)
-        self.backbone_1 = self.backbone_1.requires_grad_(False) #取消梯度
+        self.backbone_1 = self.backbone_1.requires_grad_(False)
         
         self.linear = nn.Linear(512*block.expansion, num_classes)
         
@@ -152,7 +152,7 @@ class ResNet18_with_mask_head(nn.Module):
     def get_masks(self, x):
         out = self.backbone_1(x)
         
-        mask = self.linear2(out.detach()).permute(0,2,3,1).unsqueeze(1)   #梯度不需要继续向前一个backbone传播
+        mask = self.linear2(out.detach()).permute(0,2,3,1).unsqueeze(1)  
         if self.hard_mask == True:
             mask = F.gumbel_softmax(mask, tau=1, dim=-1, hard=True)
         else:

@@ -53,7 +53,7 @@ class LocalUpdate(object):
         """
         # split indexes for train, validation (90, 10)
         idxs_train = idxs[:int(0.9*len(idxs))]
-        # idxs_train = idxs[:int(len(idxs))]            #这里应该和FedAvg对齐？？？？？？？？？？？？？
+        # idxs_train = idxs[:int(len(idxs))]           
         idxs_val = idxs[int(0.9*len(idxs)):] # is it iid? needs improve
 
 
@@ -167,7 +167,7 @@ class LocalUpdate(object):
                 model.zero_grad()
     
                 # Inference
-                outputs = model(images)     #不加mask，直接用原图进行测试
+                outputs = model(images)     
                 batch_loss = self.criterion(outputs, labels)
                 loss += batch_loss.item()
     
@@ -284,8 +284,8 @@ class LocalUpdate(object):
                 # batch_loss.append(loss.item())
                 # optimizer.step()
                 
-                #获取训练样本对应的masks
-                masks_with_idx = [train_masks[int(index)] for index in idxs]  #根据idxs索引对应的mask
+                
+                masks_with_idx = [train_masks[int(index)] for index in idxs] 
                 masks = torch.stack([item[0] for item in masks_with_idx],dim=0).unsqueeze(1)
                 images_ = masks * images
                 # print(len(images), len(labels))
@@ -336,7 +336,7 @@ class LocalUpdate(object):
             batch_loss = []
             model.train()
             
-            #根据最新的模型产生mask
+           
             cur_train_masks = generate_dataset_mask(model,
                                                     dataset=self.trainloader.dataset.dataset,
                                                     idxs=self.trainloader.dataset.idxs,
@@ -344,20 +344,20 @@ class LocalUpdate(object):
                                                     nt_samples=train_mask_nt_samples,
                                                     n_steps=train_mask_n_steps,
                                                     device=device,
-                                                    topk = topk)          #速度比较慢、占用空间比较大？？？？？？？？？？？？考虑是否吸收到每一个batch中，即使生成？
+                                                    topk = topk)         
             
             for batch_idx, (images, labels, idxs) in enumerate(loader):
                 images, labels = images.to(self.device), labels.to(self.device)
 
-                #获取训练样本对应的masks，先进行带mask的前向过程
-                masks_with_idx = [cur_train_masks[int(index)] for index in idxs]  #根据idxs索引对应的mask
+                
+                masks_with_idx = [cur_train_masks[int(index)] for index in idxs]  
                 masks = torch.stack([item[0] for item in masks_with_idx],dim=0).unsqueeze(1)
                 images_ = masks * images
                 # print(len(images), len(labels))
                 model.zero_grad()
                 log_probs_with_masks = model(images_)
                 
-                #进行不带mask的前向过程
+                
                 log_probs = model(images)
                 a_loss = self.criterion(log_probs, labels)
                 b_loss = F.mse_loss(log_probs_with_masks,log_probs.detach())
@@ -370,9 +370,9 @@ class LocalUpdate(object):
                 else:
                     rate = mse_loss_lambda
 
-                loss = a_loss + rate * b_loss   #只回传一次梯度。
+                loss = a_loss + rate * b_loss  
                 
-                # loss = self.criterion(log_probs_with_masks, labels) + mse_loss_lambda * F.mse_loss(log_probs_with_masks,log_probs.detach())   #只回传一次梯度。
+                # loss = self.criterion(log_probs_with_masks, labels) + mse_loss_lambda * F.mse_loss(log_probs_with_masks,log_probs.detach())   
                 # optimizer.zero_grad()
                 loss.backward()
                
@@ -447,22 +447,12 @@ class LocalUpdate(object):
         return best_model.state_dict(), sum(best_epoch_loss) / len(best_epoch_loss), best_model
     
 def generate_dataset_mask(local_init_model, dataset, idxs, batch_size, nt_samples, n_steps, device, topk):   
-    """
-    利用服务器发来的模型产生mask
-    
-    Args:
-        local_init_model (_type_): 服务器发来的模型
-        dataset (_type_): 需要生成mask的数据集
-        idxs (_type_): idx集合
-        batch_size (_type_): batch_size
-        nt_samples (_type_): smoothGrad方法的采样次数
-        topk (float, optional): 选取前topk百分比的显著图分数. Defaults to 0.5.
-    """
+
     ig = IntegratedGradients(local_init_model)
     nt = NoiseTunnel(ig)
 
-    #构建dataloader
-    dataloader_for_masks = DataLoader(DatasetSplit(dataset, idxs), batch_size=batch_size, shuffle=False)    #无论是train、还是test，都不进行shuffle
+    
+    dataloader_for_masks = DataLoader(DatasetSplit(dataset, idxs), batch_size=batch_size, shuffle=False)  
     
     masks={}
     for batch_idx, (images, labels, idxs) in enumerate(dataloader_for_masks):
@@ -474,8 +464,8 @@ def generate_dataset_mask(local_init_model, dataset, idxs, batch_size, nt_sample
                                             nt_type='smoothgrad_sq',  
                                             nt_samples=nt_samples, 
                                             n_steps=n_steps,
-                                            stdevs=0.2    #nt_samples的取值，还需要调参试一下
-                                            ).permute(0,2,3,1)        #产生的归因值是梯度，而非deeplift那种近似分数
+                                            stdevs=0.2   
+                                            ).permute(0,2,3,1)       
         # tensor_attributions_unbind=torch.unbind(tensor_attributions,dim=0)
         for i in range(tensor_attributions.shape[0]):
             tensor_attributions_idx = tensor_attributions[i]
@@ -486,7 +476,7 @@ def generate_dataset_mask(local_init_model, dataset, idxs, batch_size, nt_sample
             attributions_masks = (tensor_attributions_idx >= tensor_attributions_threshold).float()
             #expension+filter (cv2?)?????????
             
-            masks[int(idxs[i])]=[attributions_masks,images[i]]    #保存三个变量，idxs用于根据dataset索引mask，attributions_masks表示mask，images表示原始图片，用于比对索引是否正确。
+            masks[int(idxs[i])]=[attributions_masks,images[i]]    
             
         torch.cuda.empty_cache()#2100->1700M
         
@@ -558,8 +548,8 @@ def test_inference_with_mask(args, model, test_dataset, test_masks):
             images, labels = images.to(device), labels.to(device)
             model.zero_grad()
             
-            #获取训练样本对应的masks
-            masks_with_idx = [test_masks[int(index)] for index in idxs]  #根据idxs索引对应的mask
+            
+            masks_with_idx = [test_masks[int(index)] for index in idxs]  
             masks = torch.stack([item[0] for item in masks_with_idx],dim=0).unsqueeze(1)
             images_ = masks * images
     
@@ -610,7 +600,7 @@ def test_inference_with_global_mask(args, model, test_dataset):
             model.zero_grad()
     
             # Inference
-            outputs = model(images)     #直接采用原图进行测试
+            outputs = model(images)    
             batch_loss = criterion(outputs, labels)
             loss += batch_loss.item()
     

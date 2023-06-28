@@ -94,7 +94,7 @@ def cifar_noniid(dataset, num_users, partition):
         K = 10
         N = int(X_train.shape[0])
         print('x.shape',X_train.shape[0],' y.shape',y_train.shape[0])
-        y_train = y_train[:] # 截取训练集
+        y_train = y_train[:] 
         print('new shape',y_train.shape[0])
         net_dataidx_map = {}
         while min_size < 10:
@@ -136,7 +136,7 @@ def cifar100_noniid(dataset, num_users, partition):
         K = 100
         N = int(X_train.shape[0])
         print('x.shape',X_train.shape[0],' y.shape',y_train.shape[0])
-        y_train = y_train[:] # 截取训练集
+        y_train = y_train[:] 
         print('new shape',y_train.shape[0])
         net_dataidx_map = {}
         while min_size < 10:
@@ -181,7 +181,7 @@ def mnist_noniid(dataset, num_users, partition):
         K = 10
         N = int(X_train.shape[0])
         print('x.shape',X_train.shape[0],' y.shape',y_train.shape[0])
-        y_train = y_train[:] # 截取训练集
+        y_train = y_train[:] 
         print('new shape',y_train.shape[0])
         net_dataidx_map = {}
         while min_size < 10:
