@@ -17,14 +17,14 @@ import torch
 from tensorboardX import SummaryWriter
 
 from options import args_parser
-from utils import get_dataset, average_weights, exp_details, save_checkpoint, average_weights_for_model_with_global_mask
-from localupdates.update import LocalUpdate, test_inference, test_inference_with_mask, generate_dataset_mask, test_inference_with_global_mask
+from utils import get_dataset, average_weights, exp_details, save_checkpoint
+from localupdates.update import LocalUpdate, test_inference, test_inference_with_mask, generate_dataset_mask
 from models.models import TestmyNet
-from models.models_resnet import ResNet18, ResNet18_with_mask
+from models.models_resnet import ResNet18
 from models.models_shufflenetv2 import ShuffleNetV2
 from models.models_resnext import resnext
 from operator import itemgetter, attrgetter
-# from xai import XAI_evaluate, XAI_evaluate_with_global_masks
+# from xai import XAI_evaluate
 from xai import XAI_evaluate_with_global_masks
 from pathlib import Path
 best_local_acc = 0
@@ -68,6 +68,8 @@ class Logger(object):
         self.logger.addHandler(th)
 
 if __name__ == '__main__':
+    if not os.path.exists("mylog"):
+        os.mkdir("mylog")
     log = Logger('mylog/'+time.strftime("%Y-%m-%d-%H_%M_%S", time.localtime())+'.log',level='debug')
 
     best_local_acc = 0
@@ -127,10 +129,7 @@ if __name__ == '__main__':
     if args.model == 'test':
         global_model = TestmyNet()
     elif args.model == 'resnet18':
-        if args.mode in [6,7,8]:
-            global_model = ResNet18_with_mask(num_classes, input_channel,True if args.output_hard_mask==1 else False)
-        else:
-            global_model = ResNet18(num_classes, input_channel)
+        global_model = ResNet18(num_classes, input_channel)
     elif args.model == 'shufflenetv2':
         if args.dataset == "cifar10":
             global_model = ShuffleNetV2(1)      
@@ -208,7 +207,6 @@ if __name__ == '__main__':
 
     for epoch in range(start_epoch, start_epoch+args.epochs):
         epoch_start_time = time.time()
-        #D
         is_best = 0
         local_weights, local_losses= [], []
         #update learning rate
@@ -233,48 +231,17 @@ if __name__ == '__main__':
             
             local_init_model=copy.deepcopy(global_model)
             
-            if args.mode in [0,2,5]:  
+            if args.mode in [0,1,2,5]:  
                 w, loss, lw  = local_model.update_weights(
                     model=local_init_model, global_round=epoch, user=idx)
-            elif args.mode == 1:     
-                if epoch < args.mode1_start_epoch:       
-                    w, loss, lw  = local_model.update_weights(
-                        model=local_init_model, global_round=epoch, user=idx)     
-                else:
-                
-                    print("Use Data Augmentation.")
-                    train_masks = generate_dataset_mask(local_init_model,
-                                                        dataset=train_dataset,
-                                                        idxs=user_groups[idx],
-                                                        batch_size=args.train_mask_batch_size,
-                                                        nt_samples=args.train_mask_nt_samples,
-                                                        n_steps=args.train_mask_n_steps,
-                                                        device=device,
-                                                        topk = args.topk)          
-                    w, loss, lw  = local_model.update_weights_augmentation(
-                        model=local_init_model, global_round=epoch, user=idx, train_masks = train_masks) 
             elif args.mode == 4:        #FedProx
                 w, loss, lw  = local_model.update_weights_fedprox(
                     model=local_init_model, global_round=epoch, user=idx, global_model=global_model)
-            elif args.mode == 3:
-                w, loss, lw  = local_model.update_weights_augmentation_similarity(model=local_init_model,
-                                                                                  device=device,
-                                                                                  global_round=epoch, 
-                                                                                  user=idx, 
-                                                                                  train_mask_batch_size=args.mode3_train_mask_batch_size,
-                                                                                  train_mask_nt_samples=args.mode3_train_mask_nt_samples,
-                                                                                  train_mask_n_steps=args.mode3_train_mask_n_steps,
-                                                                                  topk=args.topk,
-                                                                                  mse_loss_lambda=args.mse_loss_lambda,
-                                                                                  mapping = args.mapping)
-            elif args.mode == 6:
-                w, loss, lw  = local_model.update_weights_with_global_mask(     #
-                    model=local_init_model, global_round=epoch, user=idx)
             else:
                 raise ValueError("args.mode error。")
             
             #simulate this will happen in the enclave or cloud side
-            if args.mode in [0,1,3,4,5]:  
+            if args.mode in [0,1,4,5]:  
                 local_test_acc, local_test_loss =  test_inference(args, model=copy.deepcopy(lw), test_dataset=test_dataset)            
             elif args.mode == 2:
                 if epoch < args.mode2_end_epoch:
@@ -287,14 +254,36 @@ if __name__ == '__main__':
                                                         device=device,
                                                         topk = args.topk)     
                 local_test_acc, local_test_loss =  test_inference_with_mask(args, model=copy.deepcopy(lw), test_dataset=test_dataset, test_masks=test_masks)
-            elif args.mode == 6:
-                local_test_acc, local_test_loss =  test_inference_with_global_mask(
-                    args, model=copy.deepcopy(lw), test_dataset=test_dataset) 
+            else:
+                raise ValueError("args.mode error。")
             
             logger.add_scalar(f"user{idx}_test_acc", local_test_acc, epoch)
             local_test_acc_list.append((idx,local_test_acc))
             local_test_loss_list.append((idx,local_test_loss))
 
+            ##### add XAI calc here #####          
+            if args.mode in [0,1,4]:
+                in_mask_acc_mean,out_mask_acc_mean,XAI_ACC=XAI_evaluate_with_global_masks(copy.deepcopy(lw),
+                                                                                        files,
+                                                                                        assetpath,
+                                                                                        dataset_name=args.dataset,
+                                                                                        device=device,
+                                                                                        XAI_labels=XAI_labels,
+                                                                                        classes=classes,
+                                                                                        nt_samples=args.XAI_evaluate_nt_samples,   #测试数值
+                                                                                        n_steps=args.XAI_evaluate_n_steps,      #测试数值
+                                                                                        margin=0.1,     #in_mask和out_mask之间的差距,
+                                                                                        topk = args.topk,
+                                                                                        compare_sever_client_masks=True if args.compare_sever_client_masks == 1 else 0,
+                                                                                        global_model=global_model,
+                                                                                        batch_size=args.XAI_evaluate_batch_size,
+                                                                                        output_path="./res/",
+                                                                                        verbose=1)
+                logger.add_scalar(f"user{idx}_XAI_ACC", XAI_ACC, epoch)
+                logger.add_scalar(f"user{idx}_in_mask_acc_mean", in_mask_acc_mean, epoch)
+                local_XAI_acc_list.append((idx,XAI_ACC))
+                in_mask_acc_mean_list.append((idx,in_mask_acc_mean))
+            #######end XAI calc#####
            
             local_weights.append(copy.deepcopy(w))
             local_losses.append(copy.deepcopy(loss))
@@ -319,14 +308,14 @@ if __name__ == '__main__':
         # Using sorted() + itemgetter()
         
         
-        if args.mode in [0,6]:      
+        if args.mode in [0]:      
             res = random.sample(local_test_acc_list,N)
-        elif args.mode in [1,2,3]:
+        elif args.mode in [1]:
             # Here is Ablation Study
             # mean_acc_and_XAI_acc = [(local_test_acc_list[i][0],(0.8*local_test_acc_list[i][1]+0.2*local_XAI_acc_list[i][1])) for i in range(len(local_test_acc_list))] 
             mean_acc_and_XAI_acc = [(local_test_acc_list[i][0],(local_test_acc_list[i][1]+local_XAI_acc_list[i][1])/2) for i in range(len(local_test_acc_list))]   
             res = sorted(mean_acc_and_XAI_acc, key=itemgetter(1), reverse = True)[:N]
-        elif args.mode in [4,5]:
+        elif args.mode in [2,4,5]:
             res = sorted(local_test_acc_list, key=itemgetter(1), reverse = True)[:N]
         print("The sorted acc_list is : " + str(res))
         
@@ -338,19 +327,11 @@ if __name__ == '__main__':
 
         # update global weights
         if args.is_aggregate_with_weights == 0: 
-            if args.mode in [6]:
-                global_weights = average_weights_for_model_with_global_mask(local_weights,selected_client_idx_list)
-            else:
-                global_weights = average_weights(local_weights,selected_client_idx_list)
+            global_weights = average_weights(local_weights,selected_client_idx_list)
         elif args.is_aggregate_with_weights == 1: 
-            if args.mode in [6]:
-                global_weights = average_weights_for_model_with_global_mask(local_weights,
-                                                                            selected_client_idx_list,
-                                                                            [client_dataset_size[i] for i in range(len(local_weights)) if i in selected_client_idx_list])
-            else:
-                global_weights = average_weights(local_weights,
-                                                selected_client_idx_list,
-                                                [client_dataset_size[i] for i in range(len(local_weights)) if i in selected_client_idx_list])
+            global_weights = average_weights(local_weights,
+                                            selected_client_idx_list,
+                                            [client_dataset_size[i] for i in range(len(local_weights)) if i in selected_client_idx_list])
         else:
             raise ValueError("args.mode有误。")
 
@@ -372,7 +353,7 @@ if __name__ == '__main__':
         # train_accuracy.append(sum(list_acc)/len(list_acc))
 
         # print global training loss after every 'i' rounds
-        if args.mode in [0,1,3,4,5]: 
+        if args.mode in [0,1,4,5]: 
             test_acc, test_loss =  test_inference(args, global_model, test_dataset)   
         elif args.mode == 2:
             if epoch < args.mode2_end_epoch:
@@ -385,11 +366,8 @@ if __name__ == '__main__':
                                                     device=device,
                                                     topk = args.topk)     
             test_acc, test_loss =  test_inference_with_mask(args, model=global_model, test_dataset=test_dataset, test_masks=test_masks)
-        elif args.mode == 6:
-            test_acc, test_loss =  test_inference_with_global_mask(
-                args, global_model, test_dataset=test_dataset) 
         
-        if args.mode in [0,1,3,4,5,6]:  
+        if args.mode in [0,1,4,5]:  
             in_mask_acc_mean,out_mask_acc_mean,XAI_ACC=XAI_evaluate_with_global_masks(global_model,
                                                                                             files,
                                                                                             assetpath,
@@ -404,8 +382,7 @@ if __name__ == '__main__':
                                                                                             compare_sever_client_masks=0,
                                                                                             batch_size=args.XAI_evaluate_batch_size,
                                                                                             output_path=f"./res/epoch_{epoch}/",
-                                                                                            verbose=0,
-                                                                                            is_mode_6=True if args.mode in [6] else False)
+                                                                                            verbose=0)
             test_in_mask_acc_mean_list.append(in_mask_acc_mean)
             test_XAI_ACC_list.append(XAI_ACC)
             

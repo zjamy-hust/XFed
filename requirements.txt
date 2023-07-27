@@ -1,0 +1,69 @@
+brotlipy==0.7.0
+CacheControl==0.12.11
+cachy==0.3.0
+captum==0.6.0
+certifi @ file:///croot/certifi_1690232220950/work/certifi
+cffi==1.15.1
+charset-normalizer @ file:///tmp/build/80754af9/charset-normalizer_1630003229654/work
+cleo==1.0.0a5
+contourpy @ file:///opt/conda/conda-bld/contourpy_1663827406301/work
+crashtest==0.3.1
+cryptography==38.0.1
+cycler @ file:///tmp/build/80754af9/cycler_1637851556182/work
+distlib==0.3.6
+dulwich==0.20.46
+fonttools==4.25.0
+html5lib==1.1
+idna @ file:///croot/idna_1666125576474/work
+importlib-resources @ file:///tmp/build/80754af9/importlib_resources_1625135880749/work
+jaraco.classes==3.2.2
+jeepney==0.8.0
+keyring==23.9.3
+kiwisolver @ file:///croot/kiwisolver_1672387140495/work
+lockfile==0.12.2
+matplotlib @ file:///croot/matplotlib-suite_1679593461707/work
+mkl-fft==1.3.6
+mkl-random @ file:///work/mkl/mkl_random_1682950433854/work
+mkl-service==2.4.0
+more-itertools==8.14.0
+msgpack==1.0.4
+munkres==1.1.4
+numpy @ file:///work/mkl/numpy_and_numpy_base_1682953417311/work
+opencv-python==4.8.0.74
+packaging @ file:///croot/packaging_1678965309396/work
+pexpect==4.8.0
+Pillow==9.4.0
+pkginfo==1.8.3
+platformdirs==2.5.2
+ply==3.11
+poetry==1.2.1
+poetry-core==1.2.0
+poetry-plugin-export==1.0.7
+protobuf==4.23.4
+ptyprocess==0.7.0
+pycparser==2.21
+pylev==1.4.0
+pyOpenSSL @ file:///croot/pyopenssl_1690223430423/work
+pyparsing @ file:///opt/conda/conda-bld/pyparsing_1661452539315/work
+PyQt5-sip==12.11.0
+PySocks @ file:///tmp/build/80754af9/pysocks_1605305779399/work
+python-dateutil @ file:///tmp/build/80754af9/python-dateutil_1626374649649/work
+requests @ file:///croot/requests_1690400202158/work
+requests-toolbelt==0.9.1
+SecretStorage==3.3.3
+shellingham==1.5.0
+sip @ file:///tmp/abs_44cd77b_pu/croots/recipe/sip_1659012365470/work
+six @ file:///tmp/build/80754af9/six_1644875935023/work
+tensorboardX==2.6.1
+toml @ file:///tmp/build/80754af9/toml_1616166611790/work
+tomlkit==0.11.4
+torch==1.12.1
+torchaudio==0.12.1
+torchvision==0.13.1
+tornado @ file:///opt/conda/conda-bld/tornado_1662061693373/work
+tqdm==4.65.0
+typing_extensions @ file:///croot/typing_extensions_1690297465030/work
+urllib3 @ file:///croot/urllib3_1686163155763/work
+virtualenv==20.16.5
+webencodings==0.5.1
+zipp @ file:///croot/zipp_1672387121353/work

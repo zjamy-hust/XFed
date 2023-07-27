@@ -120,57 +120,6 @@ def average_weights(w,selected_list,selected_client_dataset_sizes=None):
                 w_avg[key] = torch.div(w_avg[key], len(selected_list))
     return w_avg
 
-def average_weights_for_model_with_global_mask(w,selected_list,selected_client_dataset_sizes=None):
-    """
-    Returns the average of the weights.
-    
-    client_dataset_sizes: list。
-    """
-    if selected_client_dataset_sizes is None: 
-        w_avg = copy.deepcopy(w[selected_list[0]])
-        for key in w_avg.keys():
-            if "backbone_1" in key:
-                continue
-            
-            for i in selected_list[1:]:
-                w_avg[key] += w[i][key]
-            w_avg[key] = torch.div(w_avg[key], len(selected_list))
-            
-            if "backbone_2" in key:
-                key_splited = key.split(".")
-                key_splited[0] = "backbone_1"
-                new_key = ".".join(key_splited)
-                w_avg[new_key] = copy.deepcopy(w_avg[key])
-    else:
-        if not isinstance(selected_client_dataset_sizes,list):
-            raise ValueError("selected_client_dataset_sizes必须为list。")
-        if not len(selected_client_dataset_sizes) == len(selected_list):
-            raise ValueError("selected_client_dataset_sizes的长度需要与selected_list一致。")
-        selected_client_weights = np.array(selected_client_dataset_sizes)/sum(selected_client_dataset_sizes)
-        w_avg = copy.deepcopy(w[selected_list[0]])
-        for key in w_avg.keys():
-            if "backbone_1" in key:
-                continue
-            
-            if "weight" in key or "bias" in key:
-                w_avg[key] *= selected_client_weights[selected_list[0]]
-                for i in selected_list[1:]:
-                    w_avg[key] += w[i][key] * selected_client_weights[i]
-                w_avg[key] = torch.div(w_avg[key], len(selected_list))
-            else:
-                for i in selected_list[1:]:
-                    w_avg[key] += w[i][key]
-                w_avg[key] = torch.div(w_avg[key], len(selected_list))
-                
-            if "backbone_2" in key:
-                key_splited = key.split(".")
-                key_splited[0] = "backbone_1"
-                new_key = ".".join(key_splited)
-                w_avg[new_key] = copy.deepcopy(w_avg[key])
-            
-    return w_avg
-
-
 def weights_norm_2L_regularization(global_model_dict, local_model_dict):
     local_model_ = copy.deepcopy(local_model_dict)
     global_model_ = copy.deepcopy(global_model_dict)

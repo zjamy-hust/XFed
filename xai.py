@@ -91,8 +91,7 @@ def XAI_evaluate_with_global_masks(local_model,
                                    global_model=None, 
                                    batch_size=1,
                                    output_path="./",
-                                   verbose=1,
-                                   is_mode_6=False):
+                                   verbose=1):
     
     test_files_list_jpg = sorted(filter(lambda x: x.endswith(".jpg"), test_files_list))
     if len(test_files_list_jpg) <= 0:
@@ -182,8 +181,6 @@ def XAI_evaluate_with_global_masks(local_model,
         input_asset_norm=images.to(device)
         examples_num = input_asset_norm.shape[0]
         
-        if is_mode_6 == True:
-            localmodel_mask = local_model.get_masks(input_asset_norm)
         output_asset = local_model(input_asset_norm)
         _, predicted_asset = torch.max(output_asset, 1)
         
@@ -257,12 +254,6 @@ def XAI_evaluate_with_global_masks(local_model,
             fig.show()
             fig.savefig(output_path+image_masks_by_human[example_index_in_all][0][:-4]+"_result.png")
             
-            if is_mode_6 == True:
-                fig, (orig, localmodel_mask_) = plt.subplots(1, 2)
-                orig.imshow(np.transpose(npimg_list[example_index_in_all], (1, 2, 0)),cmap=default_cmap,vmin=-1,vmax=1)
-                localmodel_mask_.imshow(localmodel_mask[i][0,:,:,1].cpu().data.numpy(),cmap=default_cmap,vmin=-1,vmax=1)
-                fig.colorbar(plt.cm.ScalarMappable(cmap=default_cmap,norm=Normalize(vmin=-1., vmax=1.)))
-                fig.savefig(output_path+image_masks_by_human[example_index_in_all][0][:-4]+"_local_model_mask.jpg")
             
             #显示globale和local的mask
             if compare_sever_client_masks == 1:
@@ -270,7 +261,6 @@ def XAI_evaluate_with_global_masks(local_model,
                 orig.imshow(np.transpose(npimg_list[example_index_in_all], (1, 2, 0)))
                 local_mask_.imshow(test_images_masks_by_local_model[example_index_in_all][0].cpu().data.numpy())
                 global_mask_.imshow(test_images_masks_by_global_model[example_index_in_all][0].cpu().data.numpy())
-                localmodel_mask_.imshow(localmodel_mask[example_index_in_all][0,:,:,1].cpu().data.numpy())
                 fig.savefig(output_path+image_masks_by_human[example_index_in_all][0][:-4]+"_compare_global_local.jpg")
             plt.close()
 
